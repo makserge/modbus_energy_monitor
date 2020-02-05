@@ -75,6 +75,8 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   unsigned int numberOfSamples = 0;                        //This is now incremented
   double filteredV;
   double filteredI;
+  int sampleV;                        //sample_ holds the raw analog read value
+  int sampleI;
   double sqV;
   double sqI;
   //double apparentPower;
@@ -163,11 +165,13 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
 
   double I_RATIO = ICAL *((SupplyVoltage/1000.0) / (ADC_COUNTS));
  // Irms = I_RATIO * sqrt(sumI / numberOfSamples);
+  double Irms = I_RATIO * sqrt(sumI / numberOfSamples);
 
   //Calculation power values
   realPower = V_RATIO * I_RATIO * sumP / numberOfSamples;
   //apparentPower = Vrms * Irms;
   //powerFactor = realPower / apparentPower;
+  powerFactor = realPower / (Vrms * Irms);
 
   //Reset accumulators
   sumV = 0;

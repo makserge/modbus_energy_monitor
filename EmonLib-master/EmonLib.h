@@ -60,7 +60,7 @@ class EnergyMonitor
     //Useful value variables
     double realPower,
       //apparentPower,
-      //powerFactor,
+      powerFactor,
       Vrms;//,
      //Irms;
 
@@ -78,8 +78,8 @@ class EnergyMonitor
     //--------------------------------------------------------------------------------------
     // Variable declaration for emon_calc procedure
     //--------------------------------------------------------------------------------------
-    int sampleV;                        //sample_ holds the raw analog read value
-    int sampleI;
+    //int sampleV;                        //sample_ holds the raw analog read value
+   // int sampleI;
 
     double lastFilteredV;
 	//double filteredV;          //Filtered_ is the raw analog value minus the DC offset

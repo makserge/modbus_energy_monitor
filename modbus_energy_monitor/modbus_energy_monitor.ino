@@ -36,7 +36,8 @@ const int WATCHDOG_TIMEOUT = 10000000; //10s
 int vrms;
 
 const byte CURRENT_CHANNELS = 9;
-int power[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+float power[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+float powerFactor[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 void setup() {
   IWatchdog.begin(WATCHDOG_TIMEOUT);
@@ -86,32 +87,41 @@ void setup() {
 
 void loop() {
   ct1.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  vrms = (int)ct1.Vrms*100;
-  power[0] = (int)ct1.realPower;
+  vrms = (float)ct1.Vrms * 100;
+  power[0] = (float)ct1.realPower;
+  powerFactor[0] = (float)ct1.powerFactor;
   
   ct2.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[1] = (int)ct2.realPower;
+  power[1] = (float)ct2.realPower;
+  powerFactor[1] = (float)ct2.powerFactor;
  
   ct3.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[2] = (int)ct3.realPower;
+  power[2] = (float)ct3.realPower;
+  powerFactor[2] = (float)ct3.powerFactor;
  
   ct4.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[3] = (int)ct4.realPower;
+  power[3] = (float)ct4.realPower;
+  powerFactor[3] = (float)ct4.powerFactor;
  
   ct5.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[4] = (int)ct5.realPower;
+  power[4] = (float)ct5.realPower;
+  powerFactor[4] = (float)ct5.powerFactor;
  
   ct6.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[5] = (int)ct6.realPower;
+  power[5] = (float)ct6.realPower;
+  powerFactor[5] = (float)ct6.powerFactor;
  
   ct7.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[6] = (int)ct7.realPower;
+  power[6] = (float)ct7.realPower;
+  powerFactor[6] = (float)ct7.powerFactor;
  
   ct8.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[7] = (int)ct8.realPower;
+  power[7] = (float)ct8.realPower;
+  powerFactor[7] = (float)ct8.powerFactor;
  
   ct9.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
-  power[8] = (int)ct9.realPower;
+  power[8] = (float)ct9.realPower;
+  powerFactor[8] = (float)ct9.powerFactor;
   
   slave.poll();
   
@@ -136,8 +146,13 @@ uint8_t writeDigitalOut(uint8_t fc, uint16_t address, uint16_t length) {
  */
 
 uint8_t readAnalogIn(uint8_t fc, uint16_t address, uint16_t length) {
-    for (int i = 0; i < CURRENT_CHANNELS; i++) {
-        slave.writeRegisterToBuffer(i, power[address + i]);
+    slave.writeRegisterToBuffer(0, vrms);
+    int i;
+    for (i = 1; i <= CURRENT_CHANNELS; i++) {
+        slave.writeRegisterToBuffer(i, power[address + i - 1]);
+    }
+    for (int a = i; a <= CURRENT_CHANNELS + i; a++) {
+        slave.writeRegisterToBuffer(a, powerFactor[address + a - 1]);
     }
     return STATUS_OK;
 }
