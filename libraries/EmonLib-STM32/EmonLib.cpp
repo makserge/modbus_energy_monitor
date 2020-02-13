@@ -22,7 +22,7 @@
 //--------------------------------------------------------------------------------------
 // Sets the pins to be used for voltage and current sensors
 //--------------------------------------------------------------------------------------
-void EnergyMonitor::voltage(unsigned int _inPinV, double _VCAL, double _PHASECAL)
+void EnergyMonitor::voltage(PinName _inPinV, double _VCAL, double _PHASECAL)
 {
   inPinV = _inPinV;
   VCAL = _VCAL;
@@ -30,33 +30,13 @@ void EnergyMonitor::voltage(unsigned int _inPinV, double _VCAL, double _PHASECAL
   offsetV = ADC_COUNTS>>1;
 }
 
-void EnergyMonitor::current(unsigned int _inPinI, double _ICAL)
+void EnergyMonitor::current(PinName _inPinI, double _ICAL)
 {
   inPinI = _inPinI;
   ICAL = _ICAL;
   offsetI = ADC_COUNTS>>1;
 }
-/*
-//--------------------------------------------------------------------------------------
-// Sets the pins to be used for voltage and current sensors based on emontx pin map
-//--------------------------------------------------------------------------------------
-void EnergyMonitor::voltageTX(double _VCAL, double _PHASECAL)
-{
-  inPinV = 2;
-  VCAL = _VCAL;
-  PHASECAL = _PHASECAL;
-  offsetV = ADC_COUNTS>>1;
-}
 
-void EnergyMonitor::currentTX(unsigned int _channel, double _ICAL)
-{
-  if (_channel == 1) inPinI = 3;
-  if (_channel == 2) inPinI = 0;
-  if (_channel == 3) inPinI = 1;
-  ICAL = _ICAL;
-  offsetI = ADC_COUNTS>>1;
-}
-*/
 //--------------------------------------------------------------------------------------
 // emon_calc procedure
 // Calculates realPower,apparentPower,powerFactor,Vrms,Irms,kWh increment
@@ -65,39 +45,33 @@ void EnergyMonitor::currentTX(unsigned int _channel, double _ICAL)
 //--------------------------------------------------------------------------------------
 void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
 {
-  #if defined emonTxV3
-  int SupplyVoltage=3300;
-  #else
-  int SupplyVoltage = readVcc();
-  #endif
+  int SupplyVoltage = 3300;
 
   unsigned int crossCount = 0;                             //Used to measure number of times threshold is crossed.
   unsigned int numberOfSamples = 0;                        //This is now incremented
-  double filteredV;
-  double filteredI;
-  int sampleV;                        //sample_ holds the raw analog read value
-  int sampleI;
-  double sqV;
-  double sqI;
-  //double apparentPower;
-
+  int startV; 
   //-------------------------------------------------------------------------------------------------------------------------
   // 1) Waits for the waveform to be close to 'zero' (mid-scale adc) part in sin curve.
   //-------------------------------------------------------------------------------------------------------------------------
+  boolean st=false;                                  //an indicator to exit the while loop
+
   unsigned long start = millis();    //millis()-start makes sure it doesnt get stuck in the loop if there is an error.
 
-  while(1)                                   //the while loop...
+  while(st==false)                                   //the while loop...
   {
-    startV = analogRead(inPinV);                    //using the voltage waveform
-    if ((startV < (ADC_COUNTS*0.55)) && (startV > (ADC_COUNTS*0.45))) break;  //check its within range
-    if ((millis()-start)>timeout) break;
+    startV = adc_read_value(inPinV, ADC_BITS);                    //using the voltage waveform
+    if ((startV < (ADC_COUNTS*0.55)) && (startV > (ADC_COUNTS*0.45))) st=true;  //check its within range
+    if ((millis()-start)>timeout) st = true;
   }
 
   //-------------------------------------------------------------------------------------------------------------------------
   // 2) Main measurement loop
   //-------------------------------------------------------------------------------------------------------------------------
   start = millis();
-
+  double lastFilteredV, filteredV, filteredI, sqV, sumV, sqI, sumI, phaseShiftedV, instP, sumP;
+  boolean lastVCross, checkVCross;
+  int sampleV, sampleI;
+	
   while ((crossCount < crossings) && ((millis()-start)<timeout))
   {
     numberOfSamples++;                       //Count number of times looped.
@@ -106,16 +80,16 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
     //-----------------------------------------------------------------------------
     // A) Read in raw voltage and current samples
     //-----------------------------------------------------------------------------
-    sampleV = analogRead(inPinV);                 //Read in raw voltage signal
-    sampleI = analogRead(inPinI);                 //Read in raw current signal
+    sampleV = adc_read_value(inPinV, ADC_BITS);                 //Read in raw voltage signal
+    sampleI = adc_read_value(inPinI, ADC_BITS);                 //Read in raw current signal
 
     //-----------------------------------------------------------------------------
     // B) Apply digital low pass filters to extract the 2.5 V or 1.65 V dc offset,
     //     then subtract this - signal is now centred on 0 counts.
     //-----------------------------------------------------------------------------
-    offsetV = offsetV + ((sampleV-offsetV)/1024);
+    offsetV = offsetV + ((sampleV-offsetV)/4096);
     filteredV = sampleV - offsetV;
-    offsetI = offsetI + ((sampleI-offsetI)/1024);
+    offsetI = offsetI + ((sampleI-offsetI)/4096);
     filteredI = sampleI - offsetI;
 
     //-----------------------------------------------------------------------------
@@ -133,14 +107,14 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
     //-----------------------------------------------------------------------------
     // E) Phase calibration
     //-----------------------------------------------------------------------------
-   // phaseShiftedV = lastFilteredV + PHASECAL * (filteredV - lastFilteredV);
+    phaseShiftedV = lastFilteredV + PHASECAL * (filteredV - lastFilteredV);
 
     //-----------------------------------------------------------------------------
     // F) Instantaneous power calc
     //-----------------------------------------------------------------------------
-   // instP = phaseShiftedV * filteredI;          //Instantaneous Power
-    //sumP +=instP;                               //Sum
-	sumP += (lastFilteredV + PHASECAL * (filteredV - lastFilteredV)) * filteredI;
+    instP = phaseShiftedV * filteredI;          //Instantaneous Power
+    sumP +=instP;                               //Sum
+
     //-----------------------------------------------------------------------------
     // G) Find the number of times the voltage has crossed the initial voltage
     //    - every 2 crosses we will have sampled 1 wavelength
@@ -152,6 +126,8 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
     if (numberOfSamples==1) lastVCross = checkVCross;
 
     if (lastVCross != checkVCross) crossCount++;
+    
+    // delayMicroseconds(100);
   }
 
   //-------------------------------------------------------------------------------------------------------------------------
@@ -164,14 +140,12 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   Vrms = V_RATIO * sqrt(sumV / numberOfSamples);
 
   double I_RATIO = ICAL *((SupplyVoltage/1000.0) / (ADC_COUNTS));
- // Irms = I_RATIO * sqrt(sumI / numberOfSamples);
   double Irms = I_RATIO * sqrt(sumI / numberOfSamples);
 
   //Calculation power values
   realPower = V_RATIO * I_RATIO * sumP / numberOfSamples;
-  //apparentPower = Vrms * Irms;
-  //powerFactor = realPower / apparentPower;
-  powerFactor = realPower / (Vrms * Irms);
+  double apparentPower = Vrms * Irms;
+  powerFactor=realPower / apparentPower;
 
   //Reset accumulators
   sumV = 0;
@@ -179,59 +153,7 @@ void EnergyMonitor::calcVI(unsigned int crossings, unsigned int timeout)
   sumP = 0;
 //--------------------------------------------------------------------------------------
 }
-/*
-//--------------------------------------------------------------------------------------
-double EnergyMonitor::calcIrms(unsigned int Number_of_Samples)
-{
 
-  #if defined emonTxV3
-    int SupplyVoltage=3300;
-  #else
-    int SupplyVoltage = readVcc();
-  #endif
-
-
-  for (unsigned int n = 0; n < Number_of_Samples; n++)
-  {
-    sampleI = analogRead(inPinI);
-
-    // Digital low pass filter extracts the 2.5 V or 1.65 V dc offset,
-    //  then subtract this - signal is now centered on 0 counts.
-    offsetI = (offsetI + (sampleI-offsetI)/1024);
-    filteredI = sampleI - offsetI;
-
-    // Root-mean-square method current
-    // 1) square current values
-    sqI = filteredI * filteredI;
-    // 2) sum
-    sumI += sqI;
-  }
-
-  double I_RATIO = ICAL *((SupplyVoltage/1000.0) / (ADC_COUNTS));
-  double Irms = I_RATIO * sqrt(sumI / Number_of_Samples);
-
-  //Reset accumulators
-  sumI = 0;
-  //--------------------------------------------------------------------------------------
-
-  return Irms;
-}
-
-void EnergyMonitor::serialprint()
-{
-  //Serial.print(realPower);
- // Serial.print(' ');
-  //Serial.print(apparentPower);
-  //Serial.print(' ');
- // Serial.print(Vrms);
- // Serial.print(' ');
-  //Serial.print(Irms);
- // Serial.print(' ');
-  //Serial.print(powerFactor);
- // Serial.println(' ');
-//  delay(100);
-}
-*/
 //thanks to http://hacking.majenko.co.uk/making-accurate-adc-readings-on-arduino
 //and Jérôme who alerted us to http://provideyourown.com/2012/secret-arduino-voltmeter-measure-battery-voltage/
 
