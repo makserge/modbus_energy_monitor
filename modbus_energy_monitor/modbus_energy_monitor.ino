@@ -19,26 +19,24 @@ const PinName CURRENT_INPUT8_PIN = PB_0;
 const PinName CURRENT_INPUT9_PIN = PB_1;
 const PinName OUTPUT_PIN = PB_7;
 
-const int TIMER_DELAY = 3000000; //3s
-
 //Modbus slave(SLAVE_ID, RS485_TX_ENABLE_PIN);
 EnergyMonitor ct1, ct2, ct3, ct4, ct5, ct6, ct7, ct8, ct9;
 
-//https://learn.openenergymonitor.org/electricity-monitoring/ctac/calibration?redirected=true
-const float I_CAL = 45.4; // (1000 turns / 22 Ohm burden) = 45.4
-const float V_CAL = 799.53;
+const float I_CAL = 45.45;
+const float V_CAL = 1808.04;
 
 const float PHASE_SHIFT = 1.7;
-const byte NO_OF_HALF_WAVELENGTH = 20;
+const byte NO_OF_HALF_WAVELENGTH = 30;
 const int EMON_TIMEOUT = 2000;
 
 const int WATCHDOG_TIMEOUT = 10000000; //10s
 
-int vrms;
+float vrms;
 
 const byte CURRENT_CHANNELS = 9;
 float power[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 float powerFactor[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+byte channel;
 
 void setup() {
   IWatchdog.begin(WATCHDOG_TIMEOUT);
@@ -82,22 +80,8 @@ void setup() {
   ct7.voltage(VOLTAGE_INPUT_PIN, V_CAL, PHASE_SHIFT);
   ct8.voltage(VOLTAGE_INPUT_PIN, V_CAL, PHASE_SHIFT);
   ct9.voltage(VOLTAGE_INPUT_PIN, V_CAL, PHASE_SHIFT);
-
-  HardwareTimer *timer = new HardwareTimer(TIM3);
-  timer->setOverflow(TIMER_DELAY, MICROSEC_FORMAT);
-  timer->setMode(1, TIMER_OUTPUT_COMPARE_TOGGLE);
-  timer->refresh();
-  timer->attachInterrupt(funcTimer);
-  timer->resume();
   
   IWatchdog.reload();
-}
-
-void funcTimer(HardwareTimer*) {
-  for (byte channel = 0; channel < CURRENT_CHANNELS; channel++) {
-    getChannelData(channel);
-  }
-  vrms = ct1.Vrms;
 }
 
 void getCTData(byte channel, EnergyMonitor &ct) {
@@ -121,20 +105,35 @@ void getChannelData(byte channel) {
 }
 
 void loop() {
+  getChannelData(channel);
+  vrms = ct1.Vrms;
+  channel++;
+  if (channel == CURRENT_CHANNELS) {
+    channel = 0;
+  }
+  Serial.print("Vrms:");
   Serial.println(vrms);
+  Serial.print("P1:");
   Serial.println(power[0]);
+  Serial.print("P2:");
   Serial.println(power[1]);
+  Serial.print("P3:");
   Serial.println(power[2]);
+  Serial.print("P4:");
   Serial.println(power[3]);
+  Serial.print("P5:");
   Serial.println(power[4]);
+  Serial.print("P6:");
   Serial.println(power[5]);
+  Serial.print("P7:");
   Serial.println(power[6]);
+  Serial.print("P8:");
   Serial.println(power[7]);
+  Serial.print("P9:");
   Serial.println(power[8]);
   //slave.poll();
   
   IWatchdog.reload();
-  delay(3000);
 }
 
 /**

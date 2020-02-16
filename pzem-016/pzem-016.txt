@@ -1,0 +1,19 @@
+PZEM-016 Modbus registers
+
+FC3
+Address Description		Resolution
+1	Power alarm threshold	1LSB - 1W
+2	Modbus-RTU address	0x0001-0x00F7
+
+FC4
+Address Description		Resolution
+0	Voltage			1LSB - 0,1V
+1	Current low 16 bits	1LSB - 0,001A
+2	Current high 16 bits	1LSB - 0,001A
+3	Power low 16 bits	1LSB - 0,1W
+4	Power high 16 bits	1LSB - 0,1W
+5	Energy low 16 bits	1LSB - 1Wh
+6	Energy high 16 bits	1LSB - 1Wh
+7	Frequency		1LSB - 0.1Hz
+8	Power factor		1LSB - 0.1
+9	Alarm			0xFFFF - alarm, 0x0000 - not alarm
