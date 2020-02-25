@@ -33,10 +33,8 @@ const int WATCHDOG_TIMEOUT = 10000000; //10s
 
 float vrms;
 
-const byte CURRENT_CHANNELS = 9;
+const byte CURRENT_CHANNELS = 2;
 float power[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-float powerFactor[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-byte channel;
 
 void setup() {
   IWatchdog.begin(WATCHDOG_TIMEOUT);
@@ -87,7 +85,6 @@ void setup() {
 void getCTData(byte channel, EnergyMonitor &ct) {
   ct.calcVI(NO_OF_HALF_WAVELENGTH, EMON_TIMEOUT);
   power[channel] = (float)ct.realPower;
-  powerFactor[channel] = (float)ct.powerFactor;
 }
 
 void getChannelData(byte channel) {
@@ -105,36 +102,10 @@ void getChannelData(byte channel) {
 }
 
 void loop() {
-  getChannelData(channel);
-  vrms = ct1.Vrms;
-  channel++;
-  if (channel == CURRENT_CHANNELS) {
-    channel = 0;
+  for (int channel = 0; channel < CURRENT_CHANNELS; channel++) {
+    getChannelData(channel);
   }
-  /*
-  Serial.print("Vrms:");
-  Serial.println((int)(vrms * 10));
-  Serial.print("P1:");
-  Serial.println(power[0]);
-  Serial.println(powerFactor[0]);
-  Serial.print("P2:");
-  Serial.println((int)(power[1] * 10));
-  Serial.println((int)(powerFactor[1] * 100));
-  Serial.print("P3:");
-  Serial.println(power[2]);
-  Serial.print("P4:");
-  Serial.println(power[3]);
-  Serial.print("P5:");
-  Serial.println(power[4]);
-  Serial.print("P6:");
-  Serial.println(power[5]);
-  Serial.print("P7:");
-  Serial.println(power[6]);
-  Serial.print("P8:");
-  Serial.println(power[7]);
-  Serial.print("P9:");
-  Serial.println(power[8]);
-  */
+  vrms = ct1.Vrms;
   slave.poll();
   
   IWatchdog.reload();
@@ -161,8 +132,5 @@ uint8_t readAnalogIn(uint8_t fc, uint16_t address, uint16_t length) {
   for (i = 1; i <= CURRENT_CHANNELS; i++) {
     slave.writeRegisterToBuffer(i, (int)(power[address + i - 1] * 10));
   }
-  //for (int a = i; a <= CURRENT_CHANNELS + i; a++) {
-  //  slave.writeRegisterToBuffer(a, (int)(powerFactor[address + a - 1] * 100));
-  //}
   return STATUS_OK;
 }
