@@ -2,7 +2,7 @@
 #include <EmonLib.h>
 #include <IWatchdog.h>
 
-const byte SLAVE_ID  = 1;
+const byte SLAVE_ID = 3;
 const int RS485_BAUDRATE = 9600;
 
 const byte RS485_TX_ENABLE_PIN = 5;//PA15
@@ -13,13 +13,13 @@ const PinName CURRENT_INPUT2_PIN = PA_2;
 const PinName CURRENT_INPUT3_PIN = PA_3;
 const PinName CURRENT_INPUT4_PIN = PA_4;
 const PinName CURRENT_INPUT5_PIN = PA_5;
-const PinName CURRENT_INPUT6_PIN = PA_6;
-const PinName CURRENT_INPUT7_PIN = PA_7;
-const PinName CURRENT_INPUT8_PIN = PB_0;
-const PinName CURRENT_INPUT9_PIN = PB_1;
+const PinName CURRENT_INPUT6_PIN = PB_1;
+const PinName CURRENT_INPUT7_PIN = PB_0;
+const PinName CURRENT_INPUT8_PIN = PA_7;
+const PinName CURRENT_INPUT9_PIN = PA_6;
 const PinName OUTPUT_PIN = PB_7;
 
-//Modbus slave(SLAVE_ID, RS485_TX_ENABLE_PIN);
+Modbus slave(SLAVE_ID, RS485_TX_ENABLE_PIN);
 EnergyMonitor ct1, ct2, ct3, ct4, ct5, ct6, ct7, ct8, ct9;
 
 const float I_CAL = 45.45;
@@ -53,13 +53,13 @@ void setup() {
   pinMode(CURRENT_INPUT9_PIN, INPUT);
   pinMode(OUTPUT_PIN, OUTPUT);
   
-  //slave.cbVector[CB_READ_INPUT_REGISTERS] = readAnalogIn;
-  //slave.cbVector[CB_WRITE_COILS] = writeDigitalOut;
+  slave.cbVector[CB_READ_INPUT_REGISTERS] = readAnalogIn;
+  slave.cbVector[CB_WRITE_COILS] = writeDigitalOut;
 
   Serial.setRx(PA10);
   Serial.setTx(PA9);
   Serial.begin(RS485_BAUDRATE);
-  //slave.begin(RS485_BAUDRATE);
+  slave.begin(RS485_BAUDRATE);
 
   ct1.current(CURRENT_INPUT1_PIN, I_CAL);
   ct2.current(CURRENT_INPUT2_PIN, I_CAL);
@@ -111,12 +111,15 @@ void loop() {
   if (channel == CURRENT_CHANNELS) {
     channel = 0;
   }
+  /*
   Serial.print("Vrms:");
-  Serial.println(vrms);
+  Serial.println((int)(vrms * 10));
   Serial.print("P1:");
   Serial.println(power[0]);
+  Serial.println(powerFactor[0]);
   Serial.print("P2:");
-  Serial.println(power[1]);
+  Serial.println((int)(power[1] * 10));
+  Serial.println((int)(powerFactor[1] * 100));
   Serial.print("P3:");
   Serial.println(power[2]);
   Serial.print("P4:");
@@ -131,7 +134,8 @@ void loop() {
   Serial.println(power[7]);
   Serial.print("P9:");
   Serial.println(power[8]);
-  //slave.poll();
+  */
+  slave.poll();
   
   IWatchdog.reload();
 }
@@ -142,7 +146,7 @@ void loop() {
  */
 uint8_t writeDigitalOut(uint8_t fc, uint16_t address, uint16_t length) {
   for (int i = 0; i < length; i++) {
- //   digitalWrite(address + i, slave.readCoilFromBuffer(i));
+    digitalWrite(address + i, slave.readCoilFromBuffer(i));
   }
   return STATUS_OK;
 }
@@ -152,13 +156,13 @@ uint8_t writeDigitalOut(uint8_t fc, uint16_t address, uint16_t length) {
  * write back the values from analog in pins (input registers).
  */
 uint8_t readAnalogIn(uint8_t fc, uint16_t address, uint16_t length) {
- // slave.writeRegisterToBuffer(0, vrms);
+  slave.writeRegisterToBuffer(0, (int)(vrms * 10));
   int i;
   for (i = 1; i <= CURRENT_CHANNELS; i++) {
-  //  slave.writeRegisterToBuffer(i, power[address + i - 1]);
+    slave.writeRegisterToBuffer(i, (int)(power[address + i - 1] * 10));
   }
-  for (int a = i; a <= CURRENT_CHANNELS + i; a++) {
-  //  slave.writeRegisterToBuffer(a, powerFactor[address + a - 1]);
-  }
+  //for (int a = i; a <= CURRENT_CHANNELS + i; a++) {
+  //  slave.writeRegisterToBuffer(a, (int)(powerFactor[address + a - 1] * 100));
+  //}
   return STATUS_OK;
 }
