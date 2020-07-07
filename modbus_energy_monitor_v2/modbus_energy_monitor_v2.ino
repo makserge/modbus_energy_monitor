@@ -2,84 +2,55 @@
 #include <ATM90E36.h>
 #include <IWatchdog.h>
 
-const byte SLAVE_ID = 3;
-const int RS485_BAUDRATE = 9600;
+#define SLAVE_ID 3
+#define RS485_BAUDRATE 9600
 
-const byte RS485_TX_ENABLE_PIN = 5;//PA15
-const byte EMON_CS1 = 6;
-const byte EMON_CS2 = 7;
-const byte EMON_CS3 = 10;
-const PinName OUTPUT_PIN = PB_7;
+#define RS485_RX_PIN PA3
+#define RS485_TX_PIN PA2
+#define RS485_TX_ENABLE_PIN PA4
 
-const int WATCHDOG_TIMEOUT = 10000000; //10s
+#define EMON_CS1 PA0
+#define EMON_CS2 PA9
+#define EMON_CS3 PA10
+#define OUTPUT_PIN PB1
+
+const uint32_t WATCHDOG_TIMEOUT = 10000000; //10s
 const uint8_t PERIODICAL_TIMER_FREQUENCY = 1; //1HZ
 
-const byte FREQUENCY = 0;
-const byte VOLTAGE = 1;
-const byte CURRENT1 = 2;
-const byte CURRENT2 = 3;
-const byte CURRENT3 = 4;
-const byte CURRENT4 = 5;
-const byte CURRENT5 = 6;
-const byte CURRENT6 = 7;
-const byte CURRENT7 = 8;
-const byte CURRENT8 = 9;
-const byte CURRENT9 = 10;
-const byte POWER1 = 11;
-const byte POWER2 = 12;
-const byte POWER3 = 13;
-const byte POWER4 = 14;
-const byte POWER5 = 15;
-const byte POWER6 = 16;
-const byte POWER7 = 17;
-const byte POWER8 = 18;
-const byte POWER9 = 19;
-const byte POWER_FACTOR1 = 20;
-const byte POWER_FACTOR2 = 21;
-const byte POWER_FACTOR3 = 22;
-const byte POWER_FACTOR4 = 23;
-const byte POWER_FACTOR5 = 24;
-const byte POWER_FACTOR6 = 25;
-const byte POWER_FACTOR7 = 26;
-const byte POWER_FACTOR8 = 27;
-const byte POWER_FACTOR9 = 28;
+const uint8_t FREQUENCY = 0;
+const uint8_t VOLTAGE = 1;
+const uint8_t CURRENT1 = 2;
+const uint8_t CURRENT2 = 3;
+const uint8_t CURRENT3 = 4;
+const uint8_t CURRENT4 = 5;
+const uint8_t CURRENT5 = 6;
+const uint8_t CURRENT6 = 7;
+const uint8_t CURRENT7 = 8;
+const uint8_t CURRENT8 = 9;
+const uint8_t CURRENT9 = 10;
+const uint8_t POWER1 = 11;
+const uint8_t POWER2 = 12;
+const uint8_t POWER3 = 13;
+const uint8_t POWER4 = 14;
+const uint8_t POWER5 = 15;
+const uint8_t POWER6 = 16;
+const uint8_t POWER7 = 17;
+const uint8_t POWER8 = 18;
+const uint8_t POWER9 = 19;
+const uint8_t POWER_FACTOR1 = 20;
+const uint8_t POWER_FACTOR2 = 21;
+const uint8_t POWER_FACTOR3 = 22;
+const uint8_t POWER_FACTOR4 = 23;
+const uint8_t POWER_FACTOR5 = 24;
+const uint8_t POWER_FACTOR6 = 25;
+const uint8_t POWER_FACTOR7 = 26;
+const uint8_t POWER_FACTOR8 = 27;
+const uint8_t POWER_FACTOR9 = 28;
 
-double inputRegister[29] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+uint16_t inputRegister[29] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 Modbus slave(SLAVE_ID, RS485_TX_ENABLE_PIN);
 ATM90E36 emon1(EMON_CS1), emon2(EMON_CS2), emon3(EMON_CS3);
-
-void setup() {
-  IWatchdog.begin(WATCHDOG_TIMEOUT);
-  
-  pinMode(OUTPUT_PIN, OUTPUT);
-  
-  slave.cbVector[CB_READ_INPUT_REGISTERS] = readEmon;
-  slave.cbVector[CB_WRITE_COILS] = writeDigitalOut;
-
-  Serial.setRx(PA10);
-  Serial.setTx(PA9);
-  Serial.begin(RS485_BAUDRATE);
-  slave.begin(RS485_BAUDRATE);
-
-  emon1.begin();
-  emon2.begin();
-  emon3.begin();
-  
-  initPeriodicalTimer();
-}
-
-void loop() {
-  slave.poll(); 
-  IWatchdog.reload();
-}
-
-void initPeriodicalTimer() {
-  HardwareTimer *timer = new HardwareTimer(TIM2);
-  timer->setOverflow(PERIODICAL_TIMER_FREQUENCY, HERTZ_FORMAT);
-  timer->attachInterrupt(updateData);
-  timer->resume();
-}
 
 void updateData() {
   inputRegister[FREQUENCY] = emon1.GetFrequency(); 
@@ -113,6 +84,13 @@ void updateData() {
   inputRegister[POWER_FACTOR9] = emon3.GetPowerFactorC();
 }
 
+void initPeriodicalTimer() {
+  HardwareTimer *timer = new HardwareTimer(TIM1);
+  timer->setOverflow(PERIODICAL_TIMER_FREQUENCY, HERTZ_FORMAT);
+  timer->attachInterrupt(updateData);
+  timer->resume();
+}
+
 /**
  * Handle Force Single Coil (FC=05) and Force Multiple Coils (FC=15)
  * set digital output pins (coils).
@@ -133,4 +111,30 @@ uint8_t readEmon(uint8_t fc, uint16_t address, uint16_t length) {
     slave.writeRegisterToBuffer(i, (int)(inputRegister[address + i] * 10));
   }
   return STATUS_OK;
+}
+
+void setup() {
+  pinMode(OUTPUT_PIN, OUTPUT);
+  
+  slave.cbVector[CB_READ_INPUT_REGISTERS] = readEmon;
+  slave.cbVector[CB_WRITE_COILS] = writeDigitalOut;
+
+  Serial.setRx(RS485_RX_PIN);
+  Serial.setTx(RS485_TX_PIN);
+  Serial.begin(RS485_BAUDRATE);
+  Serial.begin(RS485_BAUDRATE);
+  slave.begin(RS485_BAUDRATE);
+
+  emon1.begin();
+  emon2.begin();
+  emon3.begin();
+  
+  initPeriodicalTimer();
+
+  IWatchdog.begin(WATCHDOG_TIMEOUT);
+}
+
+void loop() {
+  slave.poll(); 
+  IWatchdog.reload();
 }
