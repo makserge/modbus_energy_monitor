@@ -1,4 +1,4 @@
-#include <ModbusSlave.h>
+#include "ModbusSlave.h"
 #include "ATM90E32.h"
 #include <IWatchdog.h>
 
@@ -94,7 +94,9 @@ void initPeriodicalTimer() {
 }
 
 uint8_t readDigitalOut(uint8_t fc, uint16_t address, uint16_t length) {
-  slave.writeCoilToBuffer(0, outputState);
+  for (uint16_t i = 0; i < length; i++) {
+    slave.writeCoilToBuffer(i, outputState);
+  }
   return STATUS_OK;
 }
 
@@ -103,7 +105,9 @@ uint8_t readDigitalOut(uint8_t fc, uint16_t address, uint16_t length) {
  * set digital output pins (coils).
  */
 uint8_t writeDigitalOut(uint8_t fc, uint16_t address, uint16_t length) {
-  outputState = slave.readCoilFromBuffer(0);
+  for (uint16_t i = 0; i < length; i++) {
+    outputState = slave.readCoilFromBuffer(i);
+  }
   digitalWrite(OUTPUT_PIN, outputState);
   return STATUS_OK;
 }
