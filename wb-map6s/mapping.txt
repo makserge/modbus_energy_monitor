@@ -1,0 +1,6 @@
+Channel 1 = Vent machine
+Channel 2 = Boiler kitchen
+Channel 3 = Bolier
+Channel 4 = Balcony warm floor
+Channel 5 = Kitchen
+Channel 6 = Balcony 

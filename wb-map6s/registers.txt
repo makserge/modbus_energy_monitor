@@ -1,0 +1,62 @@
+WB-MAP6S Modbus registers
+
+All input registers (FC4)
+
+Type				Address(H)	Address(D)	Data type	Byte order	Factor		Unit
+
+RMS Voltage			0x10d9		4313		u16		big endian	0.01		V
+Frequency			0x10f8		4344		u16		big endian	0.01		Hz
+
+RMS Current 1 			0x141a		5146		u32		big endian	2.44141e-07	A
+Active Power 1			0x1306		4870		s32		big endian	0.000244141	W
+Reactive Power 1 		0x130e		4878		s32		big endian	0.000244141	VAR
+Apparent Power 1		0x1316		4886		s32		big endian	0.000244141	VA
+Power Factor 1			0x10bf		4287		s16		big endian	0.001		PF
+Active Power Consumption 1	0x120c		4620		u64		little endian	1e-05		KW/h
+Reactive Power Consumption 1 	0x122c		4652		u64		little endian	1e-05		KVAR/h
+Phase angle 1			0x10fb		4347		s16		big endian	0.1		Degree
+
+RMS Current 2			0x1418		5144		u32		big endian	2.44141e-07	A
+Active Power 2			0x1304		4868		s32		big endian	0.000244141	W
+Reactive Power 2		0x130c		4876		s32		big endian	0.000244141	VAR
+Apparent Power 2		0x1314		4884		s32		big endian	0.000244141	VA
+Power Factor 2			0x10be		4286		s16		big endian	0.001		PF
+Active Power Consumption 2	0x1208		4616		u64		little endian	1e-05		KW/h
+Reactive Power Consumption 2	0x1228		4648		u64		little endian	1e-05		KVAR/h
+Phase angle 2			0x10fa		4346		s16		big endian	0.1		Degree
+
+RMS Current 3 			0x1416		5142		u32		big endian	2.44141e-07	A
+Active Power 3			0x1302		4866		s32		big endian	0.000244141	W
+Reactive Power 3		0x130a		4874		s32		big endian	0.000244141	VAR
+Apparent Power 3		0x1312		4882		s32		big endian	0.000244141	VA
+Power Factor 3			0x10bd		4285		s16		big endian	0.001		PF
+Active Power Consumption 3	0x1204		4612		u64		little endian	1e-05		KW/h
+Reactive Power Consumption 3	0x1224		4644		u64		little endian	1e-05		KVAR/h
+Phase angle 3			0x10f9		4345		s16		big endian	0.1		Degree
+
+RMS Current 4			0x241a		9242		u32		big endian	2.44141e-07	A
+Active Power 4			0x2306		8966		s32		big endian	0.000244141	W
+Reactive Power 4		0x230e		8974		s32		big endian	0.000244141	VAR
+Apparent Power 4		0x2316		8982		s32		big endian	0.000244141	VA
+Power Factor 4			0x20bf		8383		s16		big endian	0.001		PF
+Active Power Consumption 4	0x220c		8716		u64		little endian	1e-05		KW/h
+Reactive Power Consumption 4	0x222c		8748		u64		little endian	1e-05		KVAR/h
+Phase angle 4			0x20fb		8443		s16		big endian	0.1		Degree
+
+RMS Current 5			0x2418		9240		u32		big endian	2.44141e-07	A
+Active Power 5			0x2304		8964		s32		big endian	0.000244141	W
+Reactive Power 5		0x230c		8972		s32		big endian	0.000244141	VAR
+Apparent Power 5		0x2314		8980		s32		big endian	0.000244141	VA
+Power Factor 5			0x20be		8382		s16		big endian	0.001		PF
+Active Power Consumption 5	0x2208		8712		u64		little endian	1e-05		KW/h
+Reactive Power Consumption 5	0x2228		8744		u64		little endian	1e-05		KVAR/h
+Phase angle 			0x20fa		8442		s16		big endian	0.1		Degree
+
+RMS Current 6			0x2416		9238		u32		big endian	2.44141e-07	A
+Active Power 6			0x2302		8962		s32		big endian	0.000244141	W
+Reactive Power 6		0x230a		8970		s32		big endian	0.000244141	VAR
+Apparent Power 6		0x2312		8978		s32		big endian	0.000244141	VA
+Power Factor 6			0x20bd		8381		s16		big endian	0.001		PF
+Active Power Consumption 6	0x2204		8708		u64		little endian	1e-05		KW/h
+Reactive Power Consumption 6	0x2224		8740		u64		little endian	1e-05		KVAR/h
+Phase angle 6			0x20f9		8441		s16		big endian	0.1		Degree
